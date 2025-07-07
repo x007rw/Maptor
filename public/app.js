@@ -1,27 +1,37 @@
 // --- 1. Supabaseクライアントのセットアップ ---
-// 実際のSupabase URLとAnon Keyに置き換えてください
+// 必ずSupabaseで再生成した、あなたの新しいキーに置き換えてください！
 const SUPABASE_URL = 'https://thrynpdnngvnfwusyzmp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRocnlucGRubmd2bmZ3dXN5em1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4ODczNDEsImV4cCI6MjA2NzQ2MzM0MX0.JPgVeBKyE9mfzLOUoSgrhgHpewVY6nV1k4s7blZNhTQ';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ★★★ エラー修正済み ★★★
+// グローバルに存在する `supabase` オブジェクトから `createClient` を呼び出し、
+// `supabaseClient` という新しい名前の定数に格納します。
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 
 // --- DOM要素の取得 ---
 const timerEl = document.getElementById('timer');
 const radiusEl = document.getElementById('radius');
 const instructionEl = document.getElementById('instruction');
 
+
 // --- グローバル変数 ---
 let currentCircle = null;
 let map = null;
+
 
 // --- イージング関数 ---
 function easeOutQuad(t) {
     return t * (2 - t);
 }
 
+
 // --- メインアプリケーションロジック ---
 async function main() {
     // 2. Supabaseから有効なイベントデータを取得
-    const { data: event, error } = await supabase
+    // ★★★ エラー修正済み ★★★
+    // `supabase` ではなく `supabaseClient` を使います。
+    const { data: event, error } = await supabaseClient
         .from('events')
         .select('*')
         .eq('is_active', true)
@@ -31,7 +41,13 @@ async function main() {
 
     if (error || !event) {
         console.error('イベントデータの取得エラー、または有効なイベントがありません:', error);
-        alert('現在開催中のイベントはありません。');
+        // ユーザーに分かりやすいメッセージを表示
+        document.body.innerHTML = `
+            <div style="padding: 40px; text-align: center; font-family: sans-serif;">
+                <h1>現在開催中のイベントはありません</h1>
+                <p>次のイベントをお楽しみに！</p>
+            </div>
+        `;
         return;
     }
 
@@ -67,6 +83,10 @@ async function main() {
             const seconds = Math.floor(waitTime % 60);
             timerEl.textContent = `開始まで ${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
             radiusEl.textContent = initialRadius;
+            // 円はまだ表示しないか、初期位置に表示しておく
+            if (!currentCircle) {
+                 currentCircle = L.circle(initialCenter, { radius: initialRadius, color: "#999", fillColor: "#ccc", fillOpacity: 0.2 }).addTo(map);
+            }
             return;
         }
 
@@ -80,10 +100,13 @@ async function main() {
         const currentRadius = initialRadius - (initialRadius - finalRadius) * easedProgress;
 
         if (!currentCircle) {
+            // イベント開始後、初めて円を描画
             currentCircle = L.circle(currentCenter, { radius: currentRadius, color: "#3498db", fillColor: "#aed6f1", fillOpacity: 0.4 }).addTo(map);
         } else {
+            // 円の位置と半径、色を更新
             currentCircle.setLatLng(currentCenter);
             currentCircle.setRadius(currentRadius);
+            currentCircle.setStyle({ color: "#3498db", fillColor: "#aed6f1", fillOpacity: 0.4 });
         }
 
         const timeLeft = Math.max(0, totalDuration - elapsedTime);
@@ -102,4 +125,4 @@ async function main() {
 }
 
 // --- アプリケーション実行 ---
-main(); 
+main();
