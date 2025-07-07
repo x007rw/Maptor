@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maptor</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="map"></div>
+    <div id="info-panel">
+        <h3>Maptor</h3>
+        <p>残り時間: <span id="timer">--:--:--</span></p>
+        <p>現在の円の半径: <span id="radius">----</span> m</p>
+    </div>
+    <div id="instruction" class="hidden">
+        🎉 イベントは終了しました！<br>
+        この場所での出会いをお楽しみください。
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html> 
