@@ -32,46 +32,16 @@ body {
     font-size: 14px;
 }
 
-/* ★★★ ここからが修正・追加部分 ★★★ */
 
-/* Leafletの拡大縮小ボタンの位置を少し下にずらす */
+/* ★★★ 以前のGPSボタンのスタイルを削除 ★★★ */
+
+
+/* Leafletの拡大縮小ボタンが情報パネルと被らないように調整 */
 .leaflet-top.leaflet-right {
-    top: 70px;
-    /* 元の位置より下に移動 */
-}
-
-/* GPSボタンのスタイル */
-#gps-controls {
-    position: fixed;
     top: 10px;
-    /* 拡大縮小ボタンとは独立して右上に配置 */
-    right: 10px;
-    z-index: 1000;
+    /* ★★★ GPSボタンの削除に伴い、マージンを調整 ★★★ */
+    /* top: 70px; から元の位置に近い値に戻す */
 }
-
-#gps-controls button {
-    background-color: white;
-    width: 40px;
-    height: 40px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#gps-controls button:hover {
-    background-color: #f4f4f4;
-}
-
-#gps-controls button svg {
-    color: #333;
-}
-
-
-/* ★★★ ここまでが修正・追加部分 ★★★ */
 
 #instruction {
     position: fixed;

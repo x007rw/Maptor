@@ -1,114 +1,176 @@
 // --- 1. Supabaseクライアントのセットアップ ---
-// (ここは変更なし)
+// 必ずSupabaseで取得した、あなたのキーに置き換えてください！
 const SUPABASE_URL = 'https://thrynpdnngvnfwusyzmp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRocnlucGRubmd2bmZ3dXN5em1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4ODczNDEsImV4cCI6MjA2NzQ2MzM0MX0.JPgVeBKyE9mfzLOUoSgrhgHpewVY6nV1k4s7blZNhTQ';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-
 // --- DOM要素の取得 ---
-// (ここは変更なし)
 const timerEl = document.getElementById('timer');
 const radiusEl = document.getElementById('radius');
 const instructionEl = document.getElementById('instruction');
 
-
 // --- グローバル変数 ---
-// (ここは変更なし)
 let currentCircle = null;
 let map = null;
-
+let userMarker = null; // ユーザーマーカーをグローバルで管理
 
 // --- イージング関数 ---
-// (ここは変更なし)
 function easeOutQuad(t) {
     return t * (2 - t);
 }
 
-
 // --- メインアプリケーションロジック ---
 async function main() {
-    // 2. Supabaseから有効なイベントデータを取得 (変更なし)
+    // 2. Supabaseから有効なイベントデータを取得
     const { data: event, error } = await supabaseClient
         .from('events')
-    // ... (以下、取得ロジックは省略) ...
-    // (取得ロジックは元のままでOKです)
+        .select('*')
+        .eq('is_active', true)
+        .order('start_time_utc', { ascending: true })
+        .limit(1)
+        .single();
 
-    // (イベントがない場合の表示も元のままでOKです)
+    if (error || !event) {
+        console.error('イベントデータの取得エラー、または有効なイベントがありません:', error);
+        document.body.innerHTML = `
+            <div style="padding: 40px; text-align: center; font-family: sans-serif;">
+                <h1>現在開催中のイベントはありません</h1>
+                <p>次のイベントをお楽しみに！</p>
+            </div>
+        `;
+        return;
+    }
 
-    // 3. 地図の初期化 (変更なし)
+    // 3. 地図の初期化
     const initialCenter = { lat: event.initial_lat, lng: event.initial_lng };
     map = L.map('map').setView([initialCenter.lat, initialCenter.lng], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // ★★★ ここからが追加部分 ★★★
-    // GPSボタンのセットアップ処理を呼び出す
-    setupGpsButton();
-    // ★★★ ここまでが追加部分 ★★★
+    // Leafletのカスタムコントロールを作成して地図に追加
+    const GpsControl = L.Control.extend({
+        onAdd: function (map) {
+            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+            container.style.backgroundColor = 'white';
+            container.style.width = '34px';
+            container.style.height = '34px';
+            container.style.cursor = 'pointer';
+            container.title = '現在地を表示';
 
-    // 4. 最終地点のピンを表示 (変更なし)
+            // Google Map風のアイコンをSVGで設定
+            container.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 20px; height: 20px; margin: 7px; fill: #555;">
+                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                </svg>
+            `;
+
+            // クリックイベントの処理
+            L.DomEvent.on(container, 'click', function (e) {
+                L.DomEvent.stop(e); // 地図のクリックイベントを伝播させない
+                locateUser();
+            });
+
+            return container;
+        }
+    });
+    // 作成したコントロールを右下に追加
+    new GpsControl({ position: 'bottomright' }).addTo(map);
+
+    // 4. 最終地点のピンを表示
     const finalCenter = { lat: event.final_lat, lng: event.final_lng };
     L.marker([finalCenter.lat, finalCenter.lng])
-    // ... (以下、ピン表示ロジックは省略) ...
+        .addTo(map)
+        .bindPopup("🚩 最終地点")
+        .openPopup();
 
-    // 5. イベント更新ループを開始 (変更なし)
-    // ... (ループのロジックは元のままでOKです) ...
-}
+    // 5. イベント更新ループを開始
+    const totalDuration = event.duration_seconds;
+    const initialRadius = event.initial_radius_m;
+    const finalRadius = event.final_radius_m;
+    const eventStartTime = new Date(event.start_time_utc).getTime();
 
+    const intervalId = setInterval(() => {
+        const now = Date.now();
+        const elapsedTime = (now - eventStartTime) / 1000;
 
-// ★★★ ここからが追加部分 ★★★
-// --- GPSボタンのセットアップとロジック ---
-function setupGpsButton() {
-    const gpsButton = document.getElementById('gps-button');
-    let userMarker = null;
-    let isTracking = false; // 追跡中かどうかのフラグ
-    let watchId = null; // watchPositionのID
+        if (elapsedTime < 0) {
+            const waitTime = Math.abs(elapsedTime);
+            const hours = Math.floor(waitTime / 3600);
+            const minutes = Math.floor((waitTime % 3600) / 60);
+            const seconds = Math.floor(waitTime % 60);
+            timerEl.textContent = `開始まで ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            radiusEl.textContent = initialRadius;
 
-    gpsButton.addEventListener('click', () => {
-        if (!map) return; // 地図がなければ何もしない
-
-        // 追跡中なら停止する
-        if (isTracking) {
-            navigator.geolocation.clearWatch(watchId);
-            if (userMarker) map.removeLayer(userMarker);
-            userMarker = null;
-            isTracking = false;
-            gpsButton.style.backgroundColor = 'white';
-            return;
-        }
-
-        if (!("geolocation" in navigator)) {
-            alert("この端末は位置情報に対応していません");
-            return;
-        }
-
-        gpsButton.disabled = true; // 処理中は無効化
-
-        // watchPositionで位置情報を継続的に監視
-        watchId = navigator.geolocation.watchPosition(position => {
-            const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
-
-            if (!userMarker) {
-                // 初回のみマーカーを作成
-                userMarker = L.marker(userPos).addTo(map).bindPopup("あなたはここにいます");
-                map.setView(userPos, 15); // 初回はユーザー位置にズーム
-            } else {
-                userMarker.setLatLng(userPos);
+            if (!currentCircle) {
+                currentCircle = L.circle(initialCenter, { radius: initialRadius, color: "#999", fillColor: "#ccc", fillOpacity: 0.2 }).addTo(map);
             }
-            isTracking = true;
-            gpsButton.style.backgroundColor = '#c7e6fd'; // 追跡中は色を変える
-            gpsButton.disabled = false; // 有効化
-        },
-            err => {
-                alert("位置情報の取得に失敗しました。ブラウザや端末のプライバシー設定を確認してください。");
-                gpsButton.disabled = false;
-            },
-            { enableHighAccuracy: true });
-    });
-}
-// ★★★ ここまでが追加部分 ★★★
+            return;
+        }
 
+        const progress = Math.min(elapsedTime / totalDuration, 1.0);
+        const easedProgress = easeOutQuad(progress);
+
+        const currentCenter = {
+            lat: initialCenter.lat + (finalCenter.lat - initialCenter.lat) * easedProgress,
+            lng: initialCenter.lng + (finalCenter.lng - finalCenter.lng) * easedProgress
+        };
+        const currentRadius = initialRadius - (initialRadius - finalRadius) * easedProgress;
+
+        if (!currentCircle) {
+            currentCircle = L.circle(currentCenter, { radius: currentRadius, color: "#3498db", fillColor: "#aed6f1", fillOpacity: 0.4 }).addTo(map);
+        } else {
+            currentCircle.setLatLng(currentCenter);
+            currentCircle.setRadius(currentRadius);
+            if (currentCircle.options.color === '#999') {
+                currentCircle.setStyle({ color: "#3498db", fillColor: "#aed6f1", fillOpacity: 0.4 });
+            }
+        }
+
+        const timeLeft = Math.max(0, totalDuration - elapsedTime);
+        const hours_left = Math.floor(timeLeft / 3600);
+        const minutes_left = Math.floor((timeLeft % 3600) / 60);
+        const seconds_left = Math.floor(timeLeft % 60);
+        timerEl.textContent = `${hours_left.toString().padStart(2, '0')}:${minutes_left.toString().padStart(2, '0')}:${seconds_left.toString().padStart(2, '0')}`;
+        radiusEl.textContent = Math.round(currentRadius);
+
+        if (progress >= 1.0) {
+            clearInterval(intervalId);
+            instructionEl.classList.remove('hidden');
+            currentCircle.setStyle({ color: "#e74c3c", fillColor: "#f5b7b1" });
+        }
+    }, 1000);
+}
+
+// --- GPS取得ロジック ---
+function locateUser() {
+    if (!map) return;
+
+    if (!("geolocation" in navigator)) {
+        alert("この端末は位置情報に対応していません");
+        return;
+    }
+
+    // 1回だけ現在地を取得する
+    navigator.geolocation.getCurrentPosition(position => {
+        const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
+
+        if (!userMarker) {
+            // マーカーがなければ作成
+            userMarker = L.marker(userPos).addTo(map).bindPopup("あなたはここにいます");
+        } else {
+            // マーカーがあれば位置を更新
+            userMarker.setLatLng(userPos);
+        }
+
+        // ユーザーの位置に地図を移動
+        map.setView(userPos, 16); // 少しズームして表示
+        userMarker.openPopup();
+
+    }, err => {
+        alert("位置情報の取得に失敗しました。ブラウザや端末のプライバシー設定を確認してください。");
+    }, { enableHighAccuracy: true });
+}
 
 // --- アプリケーション実行 ---
 main();
