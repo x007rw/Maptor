@@ -12,7 +12,7 @@ const instructionEl = document.getElementById('instruction');
 // --- グローバル変数 ---
 let currentCircle = null;
 let map = null;
-let userMarker = null; // ユーザーマーカーをグローバルで管理
+let userMarker = null;
 
 // --- イージング関数 ---
 function easeOutQuad(t) {
@@ -43,39 +43,45 @@ async function main() {
 
     // 3. 地図の初期化
     const initialCenter = { lat: event.initial_lat, lng: event.initial_lng };
-    map = L.map('map').setView([initialCenter.lat, initialCenter.lng], 12);
+
+    // ★★★ ここからが修正点 ★★★
+    // 地図のオプションで、デフォルトのUIを制御する
+    map = L.map('map', {
+        zoomControl: false, // 拡大縮小ボタンを非表示にする
+        attributionControl: false // 右下のクレジット表記も非表示にする（任意）
+    }).setView([initialCenter.lat, initialCenter.lng], 12);
+    // ★★★ ここまでが修正点 ★★★
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Leafletのカスタムコントロールを作成して地図に追加
+    // Leafletのカスタムコントロールとして現在地ボタンを作成・追加
     const GpsControl = L.Control.extend({
         onAdd: function (map) {
-            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
             container.style.backgroundColor = 'white';
             container.style.width = '34px';
             container.style.height = '34px';
             container.style.cursor = 'pointer';
             container.title = '現在地を表示';
 
-            // Google Map風のアイコンをSVGで設定
             container.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 20px; height: 20px; margin: 7px; fill: #555;">
                     <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
                 </svg>
             `;
 
-            // クリックイベントの処理
-            L.DomEvent.on(container, 'click', function (e) {
-                L.DomEvent.stop(e); // 地図のクリックイベントを伝播させない
+            L.DomEvent.on(container, 'click', e => {
+                L.DomEvent.stop(e);
                 locateUser();
             });
 
             return container;
         }
     });
-    // 作成したコントロールを右下に追加
-    new GpsControl({ position: 'bottomright' }).addTo(map);
+    // 作成したコントロールを「右上」に追加
+    new GpsControl({ position: 'topright' }).addTo(map);
 
     // 4. 最終地点のピンを表示
     const finalCenter = { lat: event.final_lat, lng: event.final_lng };
@@ -85,6 +91,7 @@ async function main() {
         .openPopup();
 
     // 5. イベント更新ループを開始
+    // (ループのロジックは変更なし)
     const totalDuration = event.duration_seconds;
     const initialRadius = event.initial_radius_m;
     const finalRadius = event.final_radius_m;
@@ -151,20 +158,16 @@ function locateUser() {
         return;
     }
 
-    // 1回だけ現在地を取得する
     navigator.geolocation.getCurrentPosition(position => {
         const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
 
         if (!userMarker) {
-            // マーカーがなければ作成
             userMarker = L.marker(userPos).addTo(map).bindPopup("あなたはここにいます");
         } else {
-            // マーカーがあれば位置を更新
             userMarker.setLatLng(userPos);
         }
 
-        // ユーザーの位置に地図を移動
-        map.setView(userPos, 16); // 少しズームして表示
+        map.setView(userPos, 16);
         userMarker.openPopup();
 
     }, err => {
