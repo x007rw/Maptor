@@ -1,0 +1,21 @@
+{
+    "name"; "Maptor",
+        "short_name"; "Maptor",
+            "description"; "「地図の上が、出会いの舞台になる。」リアルタイムマップイベントアプリケーション。",
+                "start_url"; "/",
+                    "display"; "standalone",
+                        "background_color"; "#ffffff",
+                            "theme_color"; "#3498db",
+                                "icons";[
+                                    {
+                                        "src": "/icons/icon-192x192.png",
+                                        "sizes": "192x192",
+                                        "type": "image/png"
+                                    },
+                                    {
+                                        "src": "/icons/icon-512x512.png",
+                                        "sizes": "512x512",
+                                        "type": "image/png"
+                                    }
+                                ]
+}
