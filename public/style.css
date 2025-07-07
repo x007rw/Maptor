@@ -1,4 +1,5 @@
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     height: 100%;
@@ -18,12 +19,18 @@ html, body {
     background: rgba(255, 255, 255, 0.9);
     padding: 5px 15px;
     border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     z-index: 1000;
 }
 
-#info-panel h3 { margin: 5px 0; }
-#info-panel p { margin: 8px 0; font-size: 14px; }
+#info-panel h3 {
+    margin: 5px 0;
+}
+
+#info-panel p {
+    margin: 8px 0;
+    font-size: 14px;
+}
 
 #instruction {
     position: fixed;
@@ -41,9 +48,18 @@ html, body {
     animation: fadeIn 0.5s ease-in-out;
 }
 
-.hidden { display: none; }
+.hidden {
+    display: none;
+}
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translate(-50%, 20px); }
-    to { opacity: 1; transform: translateX(-50%); }
-} 
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%);
+    }
+}

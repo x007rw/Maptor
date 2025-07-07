@@ -41,7 +41,8 @@ async function main() {
 
     if (error || !event) {
         console.error('イベントデータの取得エラー、または有効なイベントがありません:', error);
-        // ユーザーに分かりやすいメッセージを表示
+        // ★★★ 改善点 ★★★
+        // ユーザーに分かりやすいメッセージを画面全体に表示
         document.body.innerHTML = `
             <div style="padding: 40px; text-align: center; font-family: sans-serif;">
                 <h1>現在開催中のイベントはありません</h1>
@@ -81,11 +82,13 @@ async function main() {
             const hours = Math.floor(waitTime / 3600);
             const minutes = Math.floor((waitTime % 3600) / 60);
             const seconds = Math.floor(waitTime % 60);
-            timerEl.textContent = `開始まで ${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+            timerEl.textContent = `開始まで ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             radiusEl.textContent = initialRadius;
-            // 円はまだ表示しないか、初期位置に表示しておく
+
+            // ★★★ 改善点 ★★★
+            // 開始前の円は灰色で表示しておく
             if (!currentCircle) {
-                 currentCircle = L.circle(initialCenter, { radius: initialRadius, color: "#999", fillColor: "#ccc", fillOpacity: 0.2 }).addTo(map);
+                currentCircle = L.circle(initialCenter, { radius: initialRadius, color: "#999", fillColor: "#ccc", fillOpacity: 0.2 }).addTo(map);
             }
             return;
         }
@@ -100,22 +103,28 @@ async function main() {
         const currentRadius = initialRadius - (initialRadius - finalRadius) * easedProgress;
 
         if (!currentCircle) {
-            // イベント開始後、初めて円を描画
+            // イベント開始後、初めて円を描画する場合
             currentCircle = L.circle(currentCenter, { radius: currentRadius, color: "#3498db", fillColor: "#aed6f1", fillOpacity: 0.4 }).addTo(map);
         } else {
-            // 円の位置と半径、色を更新
+            // 既存の円の位置と半径を更新
             currentCircle.setLatLng(currentCenter);
             currentCircle.setRadius(currentRadius);
-            currentCircle.setStyle({ color: "#3498db", fillColor: "#aed6f1", fillOpacity: 0.4 });
+            // ★★★ 改善点 ★★★
+            // イベント開始時に一度だけ色を青に戻す
+            if (currentCircle.options.color === '#999') {
+                currentCircle.setStyle({ color: "#3498db", fillColor: "#aed6f1", fillOpacity: 0.4 });
+            }
         }
 
+        // UIの残り時間表示を更新
         const timeLeft = Math.max(0, totalDuration - elapsedTime);
         const hours_left = Math.floor(timeLeft / 3600);
         const minutes_left = Math.floor((timeLeft % 3600) / 60);
         const seconds_left = Math.floor(timeLeft % 60);
-        timerEl.textContent = `${hours_left.toString().padStart(2,'0')}:${minutes_left.toString().padStart(2,'0')}:${seconds_left.toString().padStart(2,'0')}`;
+        timerEl.textContent = `${hours_left.toString().padStart(2, '0')}:${minutes_left.toString().padStart(2, '0')}:${seconds_left.toString().padStart(2, '0')}`;
         radiusEl.textContent = Math.round(currentRadius);
 
+        // 終了処理
         if (progress >= 1.0) {
             clearInterval(intervalId);
             instructionEl.classList.remove('hidden');
