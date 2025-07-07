@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maptor</title>
 
-    <!-- PWA対応 -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3498db">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
@@ -22,20 +21,33 @@
         <p>残り時間: <span id="timer">--:--:--</span></p>
         <p>現在の円の半径: <span id="radius">----</span> m</p>
     </div>
+
+    <!-- ★★★ ここからが追加部分 ★★★ -->
+    <div id="gps-controls">
+        <button id="gps-button" title="現在地を表示">
+            <!-- ボタンのアイコン（SVG画像） -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path
+                    d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+            </svg>
+        </button>
+    </div>
+    <!-- ★★★ ここまでが追加部分 ★★★ -->
+
     <div id="instruction" class="hidden">
         🎉 イベントは終了しました！<br>
         この場所での出会いをお楽しみください。
     </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
 
-    <!-- Service Workerの登録 -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(registration => {
-                    console.log('ServiceWorker registration successful:', registration);
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('ServiceWorker registration successful:', reg);
                 }).catch(err => {
                     console.log('ServiceWorker registration failed:', err);
                 });
