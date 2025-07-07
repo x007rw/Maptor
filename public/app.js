@@ -1,7 +1,7 @@
 // --- 1. Supabaseクライアントのセットアップ ---
 // 実際のSupabase URLとAnon Keyに置き換えてください
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://thrynpdnngvnfwusyzmp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRocnlucGRubmd2bmZ3dXN5em1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4ODczNDEsImV4cCI6MjA2NzQ2MzM0MX0.JPgVeBKyE9mfzLOUoSgrhgHpewVY6nV1k4s7blZNhTQ';
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- DOM要素の取得 ---
